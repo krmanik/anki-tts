@@ -1,0 +1,23 @@
+{
+  "name": "anki_tts",
+  "version": "1.0.0",
+  "description": "MS Edge TTS in Anki Card Template",
+  "main": "anki_tts.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/krmanik/anki-tts.git"
+  },
+  "keywords": [
+    "anki",
+    "tts"
+  ],
+  "author": "krmanik",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/krmanik/anki-tts/issues"
+  },
+  "homepage": "https://github.com/krmanik/anki-tts#readme"
+}
