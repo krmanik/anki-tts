@@ -7,7 +7,7 @@ MS Edge TTS in Anki Card Template.
 Add following script tag at top in Anki Card Template using note editor.
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/gh/krmanik/anki-tts@latest/src/anki_tts.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/gh/krmanik/anki-tts@main/src/anki_tts.js"></script>
 ```
 
 Then update the `playTts` method, change `{{Front}}` to field name. Lets say if field name in note type is Hanzi, then replace it with `{{Hanzi}}`. Copy following method to Card template.
