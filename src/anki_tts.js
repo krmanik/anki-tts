@@ -38,7 +38,6 @@ function createStyle() {
     width: 448px;
     padding: 14px;
     text-align: left;
-    background: white;
     border-radius: 8px;
 }
 
@@ -51,18 +50,17 @@ function createStyle() {
     padding: 8px 16px;
     border: 1px solid #ccc;
     border-radius: 4px;
-    background: #f0f0f0;
     cursor: pointer;
-}
-
-#ttsButtonContainer button:hover {
-    background: #e0e0e0;
 }
 
 #voiceSelect {
     width: 100%;
     padding: 5px;
     margin: 5px 0;
+}
+
+#closeBtn {
+    float: right;
 }
 
 label {
@@ -249,6 +247,9 @@ function setupTtsConfig() {
 
     var ttsConfigContainer = createElement("div", { id: "ttsConfigContainer", style: "display: none" }, null, document.body);
     var configDiv = createElement("div", { id: "msttsConfig" }, null, ttsConfigContainer);
+    var closeBtn = createElement("div", { id: "closeBtn" }, null, configDiv);
+    closeBtn.innerText = "✖";
+    closeBtn.onclick = () => { ttsConfigContainer.style.display = "none"; };
     var configDivLocale = createElement("div", { id: "msttsConfigLocale" }, null, configDiv);
     createElement("label", { id: "localeSelectLabel", for: "localeSelect" }, "Select Locale ", configDivLocale);
     createElement("select", { id: "localeSelect" }, null, configDivLocale);
