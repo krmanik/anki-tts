@@ -1,0 +1,9 @@
+<script type="module" src="https://cdn.jsdelivr.net/gh/krmanik/anki-tts@latest/src/anki_tts.js"></script>
+
+<script>
+    function playTts() {
+        let text = '{{Front}}';   // <-----   change Front to field name in card template
+        let [ttsLocale, ttsSublocale] = getLocal();
+        edgeTtsPlay(text, ttsSublocale);
+    }
+</script>

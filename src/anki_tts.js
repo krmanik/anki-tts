@@ -4,6 +4,28 @@
  * krmanki
  * MIT
  */
+
+// Import TTS library
+import kingdanxTtsBrowser from 'https://cdn.jsdelivr.net/npm/@kingdanx/edge-tts-browser@1.0.0/+esm';
+
+// Global TTS instance and variables
+let tts = null;
+let voices = null;
+let ttsAudio = new Audio("");
+
+// Initialize TTS
+async function initializeTts() {
+    try {
+        tts = new kingdanxTtsBrowser();
+        voices = await kingdanxTtsBrowser.getVoices();
+        console.log('TTS initialized successfully');
+        return true;
+    } catch (error) {
+        console.error('Failed to initialize TTS:', error);
+        return false;
+    }
+}
+
 function createStyle() {
     let style = `
 #ttsConfigContainer {
@@ -16,6 +38,37 @@ function createStyle() {
     width: 448px;
     padding: 14px;
     text-align: left;
+    background: white;
+    border-radius: 8px;
+}
+
+#ttsButtonContainer {
+    margin: 10px 0;
+}
+
+#ttsButtonContainer button {
+    margin: 5px;
+    padding: 8px 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #f0f0f0;
+    cursor: pointer;
+}
+
+#ttsButtonContainer button:hover {
+    background: #e0e0e0;
+}
+
+#voiceSelect {
+    width: 100%;
+    padding: 5px;
+    margin: 5px 0;
+}
+
+label {
+    display: block;
+    margin: 10px 0 5px 0;
+    font-weight: bold;
 }`;
 
     let styleElement = document.createElement("style");
@@ -58,40 +111,45 @@ function showConfig() {
 }
 
 var dict = {};
-function setConfig() {
-    var TRUSTED_CLIENT_TOKEN = "6A5AA1D4EAFF4E9FB37E23D68491D6F4";
-    var VOICES_URL = "https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list?trustedclienttoken=" + TRUSTED_CLIENT_TOKEN;
-
-    fetch(VOICES_URL).then(function (res) {
-        return res.json();
-    }).then(function (data) {
-        for (var _i = 0, data_1 = data; _i < data_1.length; _i++) {
-            var d = data_1[_i];
-            var l = d.Locale;
-            l = l.split("-")[0] || "default";
-            if (!dict[l]) {
-                dict[l] = [];
-            }
-            dict[l].push(d);
+async function setConfig() {
+    try {
+        if (!voices) {
+            await initializeTts();
         }
-        dict = Object.keys(dict).sort().reduce(function (acc, key) {
-            acc[key] = dict[key];
-            return acc;
-        }, {});
 
-        setLocale();
-    });
+        if (voices) {
+            // Clear existing dict
+            dict = {};
+            
+            for (var voice of voices) {
+                var locale = voice.Locale.split("-")[0] || "default";
+                if (!dict[locale]) {
+                    dict[locale] = [];
+                }
+                dict[locale].push(voice);
+            }
+            
+            // Sort dict by keys
+            dict = Object.keys(dict).sort().reduce(function (acc, key) {
+                acc[key] = dict[key];
+                return acc;
+            }, {});
+
+            setLocale();
+        }
+    } catch (error) {
+        console.error('Error setting config:', error);
+    }
 }
 
 function setVoice() {
     var selectedLocale = localeSelect.value;
     voiceSelect.innerHTML = "";
 
-    for (var _i = 0, _a = dict[selectedLocale]; _i < _a.length; _i++) {
-        var d = _a[_i];
+    for (var voice of dict[selectedLocale]) {
         var option = document.createElement("option");
-        option.value = d.ShortName;
-        option.text = d.FriendlyName;
+        option.value = voice.ShortName;
+        option.text = voice.FriendlyName;
         voiceSelect.add(option);
     }
 }
@@ -99,6 +157,9 @@ function setVoice() {
 function setLocale() {
     var localeSelect = document.getElementById("localeSelect");
     var voiceSelect = document.getElementById("voiceSelect");
+
+    // Clear existing options
+    localeSelect.innerHTML = "";
 
     for (var key in dict) {
         if (dict.hasOwnProperty(key)) {
@@ -132,12 +193,56 @@ function setLocale() {
 };
 
 function getLocal() {
-    var ttsLocale = localStorage.getItem("ttsLocale");
-    var ttsVoice = localStorage.getItem("ttsVoice");
+    var ttsLocale = localStorage.getItem("ttsLocale") || "zh";
+    var ttsVoice = localStorage.getItem("ttsVoice") || "zh-CN-XiaoxiaoNeural";
     return [ttsLocale, ttsVoice];
 }
 
-function setupEdgeTtsConfig() {
+// Rename ttsPlay to edgeTtsPlay to match the usage pattern
+async function edgeTtsPlay(text, voice = "zh-CN-XiaoxiaoNeural") {
+    if (!text || text.trim() === '') {
+        console.warn('No text provided for TTS');
+        return;
+    }
+
+    try {
+        // Initialize TTS if not already done
+        if (!tts) {
+            const initialized = await initializeTts();
+            if (!initialized) {
+                throw new Error('Failed to initialize TTS');
+            }
+        }
+
+        // Set voice parameters
+        tts.tts.setVoiceParams({
+            text: text.trim(),
+            voice: voice,
+        });
+
+        // Generate audio blob
+        const fileName = `tts-output-${tts.tts.fileType.ext}`;
+        const blob = await tts.ttsToFile(fileName);
+
+        // Create URL and play audio
+        const url = URL.createObjectURL(blob);
+        ttsAudio.src = url;
+        
+        await ttsAudio.play();
+        
+        // Clean up URL after playback
+        ttsAudio.onended = () => {
+            URL.revokeObjectURL(url);
+        };
+
+        console.log('TTS playback completed');
+    } catch (error) {
+        console.error('TTS Error:', error);
+        throw error;
+    }
+}
+
+function setupTtsConfig() {
     var ttsButtonContainer = createElement("div", { id: "ttsButtonContainer" }, null, document.body);
     createElement("button", { id: "ttsPlayButton", onclick: "playTts()" }, "Play", ttsButtonContainer);
     createElement("button", { id: "ttsShowConfig", onclick: "showConfig()" }, "Config", ttsButtonContainer);
@@ -152,228 +257,22 @@ function setupEdgeTtsConfig() {
     createElement("select", { id: "voiceSelect", style: "width: 448px;" }, null, configDivVoice);
 }
 
+// Core TTS function using the new library - kept for backwards compatibility
+async function ttsPlay(text, voice = "zh-CN-XiaoxiaoNeural") {
+    return await edgeTtsPlay(text, voice);
+}
+
+// Initialize everything
 createStyle();
-setupEdgeTtsConfig();
+setupTtsConfig();
 
-// https://gist.github.com/likev/c36fcc8a08ba1a2c5d08f9c7d806a0ad
-// JS port of https://github.com/Migushthe2nd/MsEdgeTTS
+// Initialize TTS when the page loads
+document.addEventListener('DOMContentLoaded', async () => {
+    await initializeTts();
+});
 
-socket = null;
-ttsText = null;
-ttsWindow = null;
-ttsError = false;
-ttsAudio = new Audio("");
-
-function create_edge_TTS({ voice = "zh-CN-XiaoxiaoNeural", timeout = 10, auto_reconnect = true } = {}) {
-    const TRUSTED_CLIENT_TOKEN = "6A5AA1D4EAFF4E9FB37E23D68491D6F4";
-    const VOICES_URL = `https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list?trustedclienttoken=${TRUSTED_CLIENT_TOKEN}`;
-    const SYNTH_URL = `wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=${TRUSTED_CLIENT_TOKEN}`;
-    const BINARY_DELIM = "Path:audio\r\n";
-    const VOICE_LANG_REGEX = /\w{2}-\w{2}/;
-
-    let _outputFormat = "audio-24khz-48kbitrate-mono-mp3";
-    let _voiceLocale = 'zh-CN';
-    let _voice = voice;
-    const _queue = { message: [], url_resolve: {}, url_reject: {} };
-    let ready = false;
-
-    function _SSMLTemplate(input) {
-        return `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="${_voiceLocale}">
-              <voice name="${_voice}">
-                  ${input}
-              </voice>
-          </speak>`;
-    }
-
-    function uuidv4() {
-        return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
-            (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-        );
-    }
-
-    create_new_ws();
-
-    function setFormat(format) {
-        if (format) {
-            _outputFormat = format;
-        }
-        socket.send(`Content-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n
-                  {
-                      "context": {
-                          "synthesis": {
-                              "audio": {
-                                  "metadataoptions": {
-                                      "sentenceBoundaryEnabled": "false",
-                                      "wordBoundaryEnabled": "false"
-                                  },
-                                  "outputFormat": "${_outputFormat}" 
-                              }
-                          }
-                      }
-                  }
-              `);
-    }
-
-    async function createURL(requestId) {
-        let index_message = 0;
-        for (let message of _queue.message) {
-            const isbinary = message instanceof Blob;
-
-            if (!isbinary) {
-                continue;
-            }
-
-            const data = await message.text();
-            const Id = /X-RequestId:(.*?)\r\n/gm.exec(data)[1];
-
-            if (Id !== requestId) {
-                continue;
-            }
-
-            if (data.charCodeAt(0) === 0x00 && data.charCodeAt(1) === 0x67 && data.charCodeAt(2) === 0x58) {
-                // Last (empty) audio fragment
-                const blob = new Blob(_queue[requestId], { 'type': 'audio/mp3' });
-                _queue[requestId] = null;
-                const url = URL.createObjectURL(blob);
-                _queue.url_resolve[requestId](url);
-            } else {
-                const index = data.indexOf(BINARY_DELIM) + BINARY_DELIM.length;
-                const audioData = message.slice(index);
-                _queue[requestId].push(audioData);
-                _queue.message[index_message] = null;
-            }
-            ++index_message;
-        }
-    }
-
-    function onopen(event) {
-        setFormat();
-        ready = true;
-    }
-
-    async function onmessage(event) {
-        const isbinary = event.data instanceof Blob;
-        _queue.message.push(event.data)
-        if (!isbinary) {
-            const requestId = /X-RequestId:(.*?)\r\n/gm.exec(event.data)[1];
-            if (event.data.includes("Path:turn.end")) {
-                createURL(requestId);
-            }
-        }
-    }
-
-    function onerror(event) {
-        ready = false;
-    }
-
-    function onclose(event) {
-        ready = false;
-    }
-
-    function addSocketListeners() {
-        socket.addEventListener('open', onopen);
-        socket.addEventListener('message', onmessage);
-        socket.addEventListener('error', onerror);
-        socket.addEventListener('close', onclose);
-    }
-
-    function create_new_ws() {
-        try {
-            if (ttsError) {
-                return;
-            }
-
-            socket = new WebSocket(SYNTH_URL);
-
-            socket.onerror = function (event) {
-                ttsError = true;
-            }
-
-            addSocketListeners();
-        } catch (e) {
-            console.log(e);
-        }
-    }
-
-    let toStream = function (input) {
-        let requestSSML = _SSMLTemplate(input);
-        const requestId = uuidv4().replaceAll('-', '');
-        const request = `X-RequestId:${requestId}\r\nContent-Type:application/ssml+xml\r\nPath:ssml\r\n\r\n` + requestSSML.trim();
-
-        _queue[requestId] = [];
-
-        return new Promise((resolve, reject) => {
-            _queue.url_resolve[requestId] = resolve, _queue.url_reject[requestId] = reject;
-
-            if (!ready) {
-                if (auto_reconnect) {
-                    create_new_ws();
-                    socket.addEventListener('open', _ => socket.send(request));
-
-                    setTimeout(_ => { if (!ready) reject('reconnect timeout') }, timeout * 1000);
-                }
-                else reject('socket error or timeout');
-            } else {
-                socket.send(request)
-            }
-        });
-    }
-
-    async function play(input) {
-        const url = await toStream(input);
-        let play_resolve = function () { };
-        ttsAudio.src = url;
-        ttsAudio.onended = (e) => {
-            play_resolve(true);
-        }
-        await ttsAudio.play();
-        return new Promise((resolve, reject) => {
-            play_resolve = resolve
-        });
-    }
-
-    return new Promise((resolve, reject) => {
-        setTimeout(_ => reject('socket open timeout'), timeout * 1000);
-        // Connection opened
-        socket.addEventListener('open', function (event) {
-            resolve({
-                play,
-                toStream,
-                setVoice: (voice, locale) => {
-                    _voice = voice;
-                    if (!locale) {
-                        const voiceLangMatch = VOICE_LANG_REGEX.exec(_voice);
-                        if (!voiceLangMatch) {
-                            throw new Error("Could not infer voiceLocale from voiceName!");
-                        }
-                        _voiceLocale = voiceLangMatch[0];
-                    } else {
-                        _voiceLocale = locale;
-                    }
-                },
-                setFormat,
-                isReady: _ => ready
-            })
-        });
-    });
-}
-
-async function edgeTtsPlay(text, voice = "zh-CN-XiaoxiaoNeural") {
-    if (text === undefined || text === null || text === '') {
-        return;
-    }
-
-    if (ttsError) {
-        return;
-    }
-
-    ttsText = text;
-    const tts = await create_edge_TTS({ voice });
-
-    try {
-        await tts.play(text);
-    } catch (e) {
-        ttsError = true;
-        console.log(e);
-    }
-}
+// Make functions globally available
+window.showConfig = showConfig;
+window.ttsPlay = ttsPlay;
+window.edgeTtsPlay = edgeTtsPlay;
+window.getLocal = getLocal;
