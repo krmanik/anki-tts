@@ -224,7 +224,7 @@ async function edgeTtsPlay(text, voice = "zh-CN-XiaoxiaoNeural") {
 
         // Create URL and play audio
         const url = URL.createObjectURL(blob);
-        ttsAudio.src = url;
+        ttsAudio = new Audio(url);
         
         await ttsAudio.play();
         
