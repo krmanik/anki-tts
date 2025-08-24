@@ -218,14 +218,16 @@ async function edgeTtsPlay(text, voice = "zh-CN-XiaoxiaoNeural") {
             voice: voice,
         });
 
+        
+
         // Generate audio blob
-        const fileName = `tts-output-${tts.tts.fileType.ext}`;
+        const fileName = `tts-output-${crypto.randomUUID()}-${tts.tts.fileType.ext}`;
         const blob = await tts.ttsToFile(fileName);
 
         // Create URL and play audio
         const url = URL.createObjectURL(blob);
         ttsAudio = new Audio(url);
-        
+
         await ttsAudio.play();
         
         // Clean up URL after playback
