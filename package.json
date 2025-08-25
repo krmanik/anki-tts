@@ -1,6 +1,6 @@
 {
   "name": "anki_tts",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "MS Edge TTS in Anki Card Template",
   "main": "anki_tts.js",
   "scripts": {

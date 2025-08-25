@@ -6,7 +6,7 @@
  */
 
 // Import TTS library
-import kingdanxTtsBrowser from 'https://cdn.jsdelivr.net/npm/@kingdanx/edge-tts-browser@1.0.0/+esm';
+import edgeTtsBrowser from 'https://cdn.jsdelivr.net/npm/edge-tts-browser@latest/+esm';
 
 // Global TTS instance and variables
 let tts = null;
@@ -16,8 +16,8 @@ let ttsAudio = new Audio("");
 // Initialize TTS
 async function initializeTts() {
     try {
-        tts = new kingdanxTtsBrowser();
-        voices = await kingdanxTtsBrowser.getVoices();
+        tts = new edgeTtsBrowser();
+        voices = await edgeTtsBrowser.getVoices();
         console.log('TTS initialized successfully');
         return true;
     } catch (error) {
