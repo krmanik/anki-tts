@@ -32,7 +32,7 @@ export function initEdgeTts() {
 export function getEdgeVoices() {
     return edgeVoices;
 }
-// speech.platform.bing.com only accepts its websocket connection from the real Microsoft
+// Microsoft's Edge TTS endpoints only accept websocket connections from the real Microsoft
 // Edge browser (verified: identical request 403s from Chrome, succeeds from Edge). Browsers
 // forbid JS from overriding the User-Agent header used for that check, so it can't be worked
 // around from this file directly. Instead a relay (local Node process, see

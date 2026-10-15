@@ -1,7 +1,7 @@
 /**
  * Local relay for the Edge TTS engine.
  *
- * speech.platform.bing.com only accepts its websocket connection from the real Microsoft
+ * Microsoft's Edge TTS endpoints only accept websocket connections from the real Microsoft
  * Edge browser, checked server-side via the User-Agent header. Browser JS is forbidden from
  * setting that header (Fetch/WebSocket spec), so this can never work from Chrome/Firefox/
  * Safari, or from Anki's own review window, no matter what the client-side library does.
@@ -20,7 +20,13 @@ import WebSocket from "ws";
 const PORT = Number(process.argv[2] || process.env.PORT || 8811);
 const TRUSTED_CLIENT_TOKEN = "6A5AA1D4EAFF4E9FB37E23D68491D6F4";
 const BASE_URL = "speech.platform.bing.com/consumer/speech/synthesize/readaloud";
-const WSS_URL = `wss://${BASE_URL}/edge/v1?TrustedClientToken=${TRUSTED_CLIENT_TOKEN}`;
+// In October 2026, Microsoft began requiring Sec-MS-GEC v2 tokens on speech.platform.bing.com,
+// causing synthesis requests using legacy v1 tokens to fail with HTTP 403.
+// This workaround routes synthesis through api.msedgeservices.com, which currently still
+// accepts legacy v1 tokens when passed via Ocp-Apim-Subscription-Key (undocumented compatibility).
+// The voice list continues to be served by the legacy host.
+const WSS_URL = "wss://api.msedgeservices.com/tts/cognitiveservices/websocket/v1" +
+    `?Ocp-Apim-Subscription-Key=${TRUSTED_CLIENT_TOKEN}`;
 const VOICE_LIST_URL = `https://${BASE_URL}/voices/list?trustedclienttoken=${TRUSTED_CLIENT_TOKEN}`;
 const WIN_EPOCH = 11644473600;
 // Must track a recent real Chromium/Edge release - Microsoft's WAF appears to reject

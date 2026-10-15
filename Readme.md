@@ -56,7 +56,7 @@ If you need to call a specific engine directly instead of the saved selection, b
 
 ### Edge TTS outside Microsoft Edge
 
-`speech.platform.bing.com` checks the browser's real `User-Agent` header and rejects
+Microsoft's Edge TTS endpoints check the browser's real `User-Agent` header and reject
 everything but actual Microsoft Edge — browsers forbid JS from overriding that header, so
 this can't be fixed client-side, in this library or any other, in any browser (including
 Anki's own review window). `npm run relay` gets around this by making the connection from

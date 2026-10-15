@@ -1,12 +1,15 @@
 # Edge TTS relay - Cloudflare Worker
 
 Same job as `../relay-ts/edge-tts-relay.ts` (the Node/localhost version): connects to
-`speech.platform.bing.com` with headers spoofed to look like real Microsoft Edge, which
+Microsoft's Edge TTS endpoints with headers spoofed to look like real Microsoft Edge, which
 Microsoft's server only accepts from outside a browser sandbox. Hosted here instead of on
 your own machine, so it's always on without needing `npm run relay` running.
 
 Free tier (100k requests/day, no credit card) comfortably covers personal TTS use, always
 warm (no cold-start sleep), free HTTPS on a `*.workers.dev` subdomain.
+
+> [!NOTE]
+> This worker routes speech synthesis through `api.msedgeservices.com`, relying on its undocumented acceptance of legacy v1 tokens with `Ocp-Apim-Subscription-Key`. Note that this Worker deployment path has not been verified live from Cloudflare's edge runtime.
 
 ## Setup (one-time)
 

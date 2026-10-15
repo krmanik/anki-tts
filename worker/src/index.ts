@@ -2,7 +2,7 @@
  * Cloudflare Worker version of the Edge TTS relay (see ../../relay-ts/edge-tts-relay.ts for
  * the Node/localhost version - same protocol, same header spoofing, different runtime).
  *
- * speech.platform.bing.com only accepts its websocket connection from the real Microsoft Edge
+ * Microsoft's Edge TTS endpoints only accept websocket connections from the real Microsoft Edge
  * browser, checked server-side via the User-Agent header. Browser JS can never set that header
  * (Fetch/WebSocket spec forbids it) - but Workers' fetch() isn't a browser page, so it isn't
  * subject to that restriction, same as Node. Cloudflare's outbound-websocket pattern is
@@ -24,7 +24,16 @@ const BASE_URL = "speech.platform.bing.com/consumer/speech/synthesize/readaloud"
 // Workers' fetch() only accepts http(s) schemes, even for an outbound websocket upgrade -
 // the Upgrade header below is what actually switches the protocol, not the URL scheme
 // (unlike Node's `ws`, which wants a real wss:// URL).
-const WSS_URL = `https://${BASE_URL}/edge/v1?TrustedClientToken=${TRUSTED_CLIENT_TOKEN}`;
+// In October 2026, Microsoft began requiring Sec-MS-GEC v2 tokens on speech.platform.bing.com,
+// causing synthesis requests using legacy v1 tokens to fail with HTTP 403.
+// This workaround routes synthesis through api.msedgeservices.com, which currently still
+// accepts legacy v1 tokens when passed via Ocp-Apim-Subscription-Key (undocumented compatibility).
+// NOTE: This Cloudflare Worker route relies on this undocumented behavior and has not been
+// verified on Cloudflare's edge runtime.
+// The voice list continues to be served by the legacy host.
+const WSS_URL =
+  "https://api.msedgeservices.com/tts/cognitiveservices/websocket/v1" +
+  `?Ocp-Apim-Subscription-Key=${TRUSTED_CLIENT_TOKEN}`;
 const VOICE_LIST_URL = `https://${BASE_URL}/voices/list?trustedclienttoken=${TRUSTED_CLIENT_TOKEN}`;
 const WIN_EPOCH = 11644473600;
 
