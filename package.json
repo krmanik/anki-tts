@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
-    "build:relay": "tsc -p tsconfig.relay.json",
+    "build:relay": "tsc -p tsconfig.shared.json && tsc -p tsconfig.relay.json",
     "relay": "node scripts/edge-tts-relay.js",
     "serve": "node scripts/serve.mjs",
     "test": "echo \"Error: no test specified\" && exit 1"

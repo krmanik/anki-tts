@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "rootDir": "shared-ts",
+    "outDir": "scripts",
+    "declaration": true,
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["shared-ts/**/*.ts"]
+}
