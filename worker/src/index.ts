@@ -15,6 +15,8 @@
  * RELAY_TOKEN`) - without this, anyone who finds the URL can burn your Microsoft rate limit.
  */
 
+import { generateSecMsGecV2 } from "@shared/drm.js";
+
 export interface Env {
   RELAY_TOKEN: string;
 }
@@ -26,13 +28,12 @@ const BASE_URL = "speech.platform.bing.com/consumer/speech/synthesize/readaloud"
 // (unlike Node's `ws`, which wants a real wss:// URL).
 const WSS_URL = `https://${BASE_URL}/edge/v1?TrustedClientToken=${TRUSTED_CLIENT_TOKEN}`;
 const VOICE_LIST_URL = `https://${BASE_URL}/voices/list?trustedclienttoken=${TRUSTED_CLIENT_TOKEN}`;
-const WIN_EPOCH = 11644473600;
 
 // Must track a recent real Chromium/Edge release - Microsoft's WAF rejects implausibly old
 // version strings (this is what actually 403s edge-tts-browser's stale hardcoded 130.x).
 const CHROMIUM_FULL_VERSION = "143.0.3650.75";
 const CHROMIUM_MAJOR_VERSION = CHROMIUM_FULL_VERSION.split(".")[0];
-const SEC_MS_GEC_VERSION = `1-${CHROMIUM_FULL_VERSION}`;
+const SEC_MS_GEC_VERSION = `2-${CHROMIUM_FULL_VERSION}`;
 const USER_AGENT =
   `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) ` +
   `Chrome/${CHROMIUM_MAJOR_VERSION}.0.0.0 Safari/537.36 Edg/${CHROMIUM_MAJOR_VERSION}.0.0.0`;
@@ -45,16 +46,6 @@ const CORS: HeadersInit = {
 
 function connectId(): string {
   return crypto.randomUUID().replace(/-/g, "");
-}
-
-// Same algorithm as the Node relay: SHA-256 of the current time, rounded down to a 5-minute
-// window in Windows file-time ticks, concatenated with the trusted token.
-async function generateSecMsGec(): Promise<string> {
-  let ticks = Math.floor(Date.now() / 1000) + WIN_EPOCH;
-  ticks -= ticks % 300;
-  const ticksHns = Math.floor((ticks * 1e9) / 100);
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${ticksHns}${TRUSTED_CLIENT_TOKEN}`));
-  return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, "0")).join("").toUpperCase();
 }
 
 function dateToString(): string {
@@ -97,7 +88,7 @@ interface SynthesizeParams {
 
 async function synthesize({ text, voice, pitch, rate, volume }: SynthesizeParams): Promise<ArrayBuffer> {
   const wsUrl =
-    `${WSS_URL}&Sec-MS-GEC=${await generateSecMsGec()}&Sec-MS-GEC-Version=${SEC_MS_GEC_VERSION}` +
+    `${WSS_URL}&Sec-MS-GEC=${generateSecMsGecV2(TRUSTED_CLIENT_TOKEN)}&Sec-MS-GEC-Version=${SEC_MS_GEC_VERSION}` +
     `&ConnectionId=${connectId()}`;
 
   // Header content and order both matter here - both were tuned against the live endpoint.

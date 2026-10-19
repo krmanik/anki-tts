@@ -13,9 +13,10 @@
  *
  * Run: npm run relay   (after npm run build:relay)
  */
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { createServer } from "node:http";
 import WebSocket from "ws";
+import { generateSecMsGecV2 } from "../scripts/drm.js";
 
 // Not 8765 - that's AnkiConnect's well-known default port.
 const PORT = Number(process.argv[2] || process.env.PORT || 8811);
@@ -24,14 +25,13 @@ const TRUSTED_CLIENT_TOKEN = "6A5AA1D4EAFF4E9FB37E23D68491D6F4";
 const BASE_URL = "speech.platform.bing.com/consumer/speech/synthesize/readaloud";
 const WSS_URL = `wss://${BASE_URL}/edge/v1?TrustedClientToken=${TRUSTED_CLIENT_TOKEN}`;
 const VOICE_LIST_URL = `https://${BASE_URL}/voices/list?trustedclienttoken=${TRUSTED_CLIENT_TOKEN}`;
-const WIN_EPOCH = 11644473600;
 
 // Must track a recent real Chromium/Edge release - Microsoft's WAF appears to reject
 // implausibly old version strings (the edge-tts-browser JS library's stale hardcoded 130.x
 // is exactly why it 403s).
 const CHROMIUM_FULL_VERSION = "143.0.3650.75";
 const CHROMIUM_MAJOR_VERSION = CHROMIUM_FULL_VERSION.split(".")[0];
-const SEC_MS_GEC_VERSION = `1-${CHROMIUM_FULL_VERSION}`;
+const SEC_MS_GEC_VERSION = `2-${CHROMIUM_FULL_VERSION}`;
 const USER_AGENT =
   `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) ` +
   `Chrome/${CHROMIUM_MAJOR_VERSION}.0.0.0 Safari/537.36 Edg/${CHROMIUM_MAJOR_VERSION}.0.0.0`;
@@ -40,17 +40,8 @@ function connectId(): string {
   return randomUUID().replace(/-/g, "");
 }
 
-// Same algorithm as edge-tts-browser/edge-tts (Python): SHA-256 of the current time, rounded
-// down to a 5-minute window in Windows file-time ticks, concatenated with the trusted token.
-function generateSecMsGec(): string {
-  let ticks = Math.floor(Date.now() / 1000) + WIN_EPOCH;
-  ticks -= ticks % 300;
-  const ticksHns = Math.floor(ticks * 1e9 / 100);
-  return createHash("sha256").update(`${ticksHns}${TRUSTED_CLIENT_TOKEN}`).digest("hex").toUpperCase();
-}
-
 function buildWebSocketUrl(): string {
-  return `${WSS_URL}&Sec-MS-GEC=${generateSecMsGec()}&Sec-MS-GEC-Version=${SEC_MS_GEC_VERSION}&ConnectionId=${connectId()}`;
+  return `${WSS_URL}&Sec-MS-GEC=${generateSecMsGecV2(TRUSTED_CLIENT_TOKEN)}&Sec-MS-GEC-Version=${SEC_MS_GEC_VERSION}&ConnectionId=${connectId()}`;
 }
 
 function dateToString(): string {
